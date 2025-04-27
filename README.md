@@ -1,2 +1,2 @@
 # personal-finance-tracker
-Personal finance tracker
+The Personal Finance Tracker is a web application that allows users to manage their finances by tracking income and expenses. The app provides an intuitive dashboard where users can view their financial overview, including balance summaries, transaction history, and visual analytics of their spending patterns. Designed with simplicity in mind, this app helps users gain insights into their financial habits and plan their budgets more effectively.
