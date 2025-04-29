@@ -14,6 +14,10 @@ const dbURI = process.env.MONGO_URI;
 app.use(cors());
 app.use(express.json());
 
+// Connect the routes
+const transactionRoutes = require('./routes/transactions');
+app.use('/transactions', transactionRoutes);
+
 // Routes (example placeholder route)
 app.get('/', (req, res) => {
   res.send('Welcome to the Personal Finance Tracker API');
