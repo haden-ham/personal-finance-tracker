@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config(); // <-- This line loads your .env variables
 
+// Import the Transaction model
+const Transaction = require('./models/Transaction');
+
 const app = express();
 const PORT = process.env.PORT || 5000; // fallback to 5000 if PORT not set
 const dbURI = process.env.MONGO_URI;
