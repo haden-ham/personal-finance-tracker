@@ -1,25 +1,37 @@
-// backend/routes.js
+// routes/transactions.js
 
 const express = require('express');
 const router = express.Router();
 const Transaction = require('../models/Transaction');
 
-// Sample route to get all transactions
-router.get('/transactions', (req, res) => {
-  // Sample data (in a real app, this would be fetched from a database)
-  const transactions = [
-    { id: 1, name: 'Groceries', amount: 50 },
-    { id: 2, name: 'Coffee', amount: 5 },
-  ];
-  res.json(transactions);
+// GET all transactions from the database
+router.get('/transactions', async (req, res) => {
+  try {
+    const transactions = await Transaction.find();
+    res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
 });
 
-// Sample route to add a new transaction
-router.post('/transactions', (req, res) => {
-  const { name, amount } = req.body;
-  // Simulate saving the data to a database
-  const newTransaction = { id: Date.now(), name, amount };
-  res.status(201).json(newTransaction);
+// POST a new transaction to the database
+router.post('/transactions', async (req, res) => {
+  try {
+    const { description, amount, category, type, userId } = req.body;
+    const newTransaction = new Transaction({
+      description,
+      amount,
+      category,
+      type,
+      userId,
+    });
+    const savedTransaction = await newTransaction.save();
+    res.status(201).json(savedTransaction);
+  } catch (err) {
+    console.error('Error creating transaction:', err); // This will help us debug
+    res.status(400).json({ error: 'Failed to create transaction' });
+  }
 });
 
 module.exports = router;
+
