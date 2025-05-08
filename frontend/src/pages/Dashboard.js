@@ -5,6 +5,8 @@ function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('');
+  const [type, setType] = useState('');
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');
@@ -17,7 +19,7 @@ function Dashboard() {
 
     const fetchTransactions = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/transactions', { // Corrected to port 3000
+        const res = await fetch('http://localhost:3000/api/transactions', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -25,7 +27,6 @@ function Dashboard() {
 
         if (res.ok) {
           const data = await res.json();
-          console.log("Fetched transactions:", data); // Debugging: check fetched data
           setTransactions(data);
         } else {
           console.error('Failed to fetch transactions');
@@ -36,27 +37,26 @@ function Dashboard() {
     };
 
     fetchTransactions();
-  }, [token, navigate]);
+  }, [navigate, token]);
 
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3000/api/transactions', { // Corrected to port 3000
+      const res = await fetch('http://localhost:3000/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ description, amount }),
+        body: JSON.stringify({ description, amount, category, type }),
       });
 
       if (res.ok) {
-        const newTransaction = await res.json();
-        console.log("Newly added transaction:", newTransaction); // Debugging: check new transaction
         setDescription('');
         setAmount('');
-        
-        // Add the new transaction to the state so it shows up immediately
+        setCategory('');
+        setType('');
+        const newTransaction = await res.json();
         setTransactions((prevTransactions) => [...prevTransactions, newTransaction]);
       } else {
         console.error('Failed to add transaction');
@@ -93,6 +93,26 @@ function Dashboard() {
           onChange={(e) => setAmount(e.target.value)}
           required
         />
+        
+        {/* Category Dropdown */}
+        <select value={category} onChange={(e) => setCategory(e.target.value)} required>
+          <option value="">Select Category</option>
+          <option value="Groceries">Groceries</option>
+          <option value="Rent">Rent</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Transportation">Transportation</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Salary">Salary</option>
+          <option value="Other">Other</option>
+        </select>
+
+        {/* Type Dropdown */}
+        <select value={type} onChange={(e) => setType(e.target.value)} required>
+          <option value="">Select Type</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        
         <button type="submit">Add</button>
       </form>
 
@@ -100,7 +120,7 @@ function Dashboard() {
       <ul>
         {transactions.map((txn) => (
           <li key={txn._id}>
-            {txn.description} - ${txn.amount}
+            {txn.description} - ${txn.amount} ({txn.category} - {txn.type})
           </li>
         ))}
       </ul>
