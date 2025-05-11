@@ -11,8 +11,8 @@ function Dashboard() {
 
   const token = localStorage.getItem('token');
 
-  const expenseCategories = ['Groceries', 'Rent', 'Utilities', 'Transportation', 'Healthcare', 'Entertainment', 'Dining', 'Education'];
-  const incomeCategories = ['Salary', 'Freelance', 'Investments', 'Refunds', 'Gifts', 'Grants'];
+  const incomeCategories = ['Salary', 'Bonus', 'Interest', 'Investment', 'Other'];
+  const expenseCategories = ['Groceries', 'Rent', 'Utilities', 'Entertainment', 'Transport', 'Other'];
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -59,7 +59,7 @@ function Dashboard() {
         setAmount('');
         setCategory('');
         setType('');
-        fetchTransactions(); // refresh the list
+        fetchTransactions(); // refresh list
       } else {
         console.error('Failed to add transaction');
       }
@@ -72,6 +72,8 @@ function Dashboard() {
     localStorage.clear();
     navigate('/login');
   };
+
+  const filteredCategories = type === 'income' ? incomeCategories : expenseCategories;
 
   return (
     <div>
@@ -100,16 +102,14 @@ function Dashboard() {
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
-
-        {type && (
-          <select value={category} onChange={(e) => setCategory(e.target.value)} required>
-            <option value="">Select Category</option>
-            {(type === 'income' ? incomeCategories : expenseCategories).map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        )}
-
+        <select value={category} onChange={(e) => setCategory(e.target.value)} required>
+          <option value="">Select Category</option>
+          {filteredCategories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
         <button type="submit">Add</button>
       </form>
 
@@ -117,7 +117,7 @@ function Dashboard() {
       <ul>
         {transactions.map((txn) => (
           <li key={txn._id}>
-            {txn.description} - ${txn.amount} - {txn.category} - {txn.type}
+            {txn.description} - ${txn.amount} ({txn.type}, {txn.category})
           </li>
         ))}
       </ul>
