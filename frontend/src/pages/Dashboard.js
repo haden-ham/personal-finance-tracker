@@ -7,8 +7,8 @@ function Dashboard() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [type, setType] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const navigate = useNavigate();
-
   const token = localStorage.getItem('token');
 
   const incomeCategories = ['Salary', 'Bonus', 'Interest', 'Investment', 'Other'];
@@ -42,11 +42,17 @@ function Dashboard() {
     fetchTransactions();
   }, [navigate, token, fetchTransactions]);
 
-  const handleAddTransaction = async (e) => {
+  const handleAddOrUpdateTransaction = async (e) => {
     e.preventDefault();
+    const url = editingId
+      ? `http://localhost:3000/api/transactions/${editingId}`
+      : 'http://localhost:3000/api/transactions';
+
+    const method = editingId ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('http://localhost:3000/api/transactions', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -59,9 +65,37 @@ function Dashboard() {
         setAmount('');
         setCategory('');
         setType('');
-        fetchTransactions(); // refresh list
+        setEditingId(null);
+        fetchTransactions();
       } else {
-        console.error('Failed to add transaction');
+        console.error('Failed to submit transaction');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  };
+
+  const handleEdit = (txn) => {
+    setEditingId(txn._id);
+    setDescription(txn.description);
+    setAmount(txn.amount);
+    setCategory(txn.category);
+    setType(txn.type);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/transactions/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        fetchTransactions();
+      } else {
+        console.error('Failed to delete transaction');
       }
     } catch (err) {
       console.error('Error:', err);
@@ -81,8 +115,8 @@ function Dashboard() {
       <p>Welcome! You are logged in.</p>
       <button onClick={handleLogout}>Logout</button>
 
-      <h3>Add Transaction</h3>
-      <form onSubmit={handleAddTransaction}>
+      <h3>{editingId ? 'Edit Transaction' : 'Add Transaction'}</h3>
+      <form onSubmit={handleAddOrUpdateTransaction}>
         <input
           type="text"
           placeholder="Description"
@@ -110,7 +144,7 @@ function Dashboard() {
             </option>
           ))}
         </select>
-        <button type="submit">Add</button>
+        <button type="submit">{editingId ? 'Update' : 'Add'}</button>
       </form>
 
       <h3>Your Transactions</h3>
@@ -118,6 +152,8 @@ function Dashboard() {
         {transactions.map((txn) => (
           <li key={txn._id}>
             {txn.description} - ${txn.amount} ({txn.type}, {txn.category})
+            <button onClick={() => handleEdit(txn)}>Edit</button>
+            <button onClick={() => handleDelete(txn._id)}>Delete</button>
           </li>
         ))}
       </ul>
