@@ -1,120 +1,92 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-function Dashboard() {
+const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [type, setType] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const navigate = useNavigate();
+
   const token = localStorage.getItem('token');
 
-  const incomeCategories = ['Salary', 'Bonus', 'Interest', 'Investment', 'Other'];
-  const expenseCategories = ['Groceries', 'Rent', 'Utilities', 'Entertainment', 'Transport', 'Other'];
+  const incomeCategories = ['Salary', 'Bonus', 'Freelance', 'Investment'];
+  const expenseCategories = ['Groceries', 'Rent', 'Utilities', 'Transport', 'Dining'];
 
-  const fetchTransactions = useCallback(async () => {
+  const filteredCategories = type === 'income' ? incomeCategories : type === 'expense' ? expenseCategories : [];
+
+  const fetchTransactions = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/transactions', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await axios.get('http://localhost:3000/api/transactions', {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(data);
-      } else {
-        console.error('Failed to fetch transactions');
-      }
+      setTransactions(res.data);
     } catch (err) {
-      console.error('Error:', err);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    fetchTransactions();
-  }, [navigate, token, fetchTransactions]);
-
-  const handleAddOrUpdateTransaction = async (e) => {
-    e.preventDefault();
-    const url = editingId
-      ? `http://localhost:3000/api/transactions/${editingId}`
-      : 'http://localhost:3000/api/transactions';
-
-    const method = editingId ? 'PUT' : 'POST';
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ description, amount, category, type }),
-      });
-
-      if (res.ok) {
-        setDescription('');
-        setAmount('');
-        setCategory('');
-        setType('');
-        setEditingId(null);
-        fetchTransactions();
-      } else {
-        console.error('Failed to submit transaction');
-      }
-    } catch (err) {
-      console.error('Error:', err);
+      console.error('Failed to fetch transactions:', err);
     }
   };
 
-  const handleEdit = (txn) => {
-    setEditingId(txn._id);
-    setDescription(txn.description);
-    setAmount(txn.amount);
-    setCategory(txn.category);
-    setType(txn.type);
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  const handleAddOrUpdateTransaction = async (e) => {
+    e.preventDefault();
+
+    const transactionData = { description, amount, category, type };
+
+    try {
+      if (editingId) {
+        await axios.put(`http://localhost:3000/api/transactions/${editingId}`, transactionData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEditingId(null);
+      } else {
+        await axios.post('http://localhost:3000/api/transactions', transactionData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      setDescription('');
+      setAmount('');
+      setCategory('');
+      setType('');
+      fetchTransactions();
+    } catch (err) {
+      console.error('Error submitting transaction:', err);
+    }
+  };
+
+  const handleEdit = (transaction) => {
+    setEditingId(transaction._id);
+    setDescription(transaction.description);
+    setAmount(transaction.amount);
+    setCategory(transaction.category);
+    setType(transaction.type);
   };
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/transactions/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      await axios.delete(`http://localhost:3000/api/transactions/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (res.ok) {
-        fetchTransactions();
-      } else {
-        console.error('Failed to delete transaction');
-      }
+      fetchTransactions();
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Failed to delete transaction:', err);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setDescription('');
+    setAmount('');
+    setCategory('');
+    setType('');
   };
-
-  const filteredCategories = type === 'income' ? incomeCategories : expenseCategories;
 
   return (
     <div>
       <h2>Dashboard</h2>
-      <p>Welcome! You are logged in.</p>
-      <button onClick={handleLogout}>Logout</button>
-
       <h3>{editingId ? 'Edit Transaction' : 'Add Transaction'}</h3>
       <form onSubmit={handleAddOrUpdateTransaction}>
         <input
@@ -139,19 +111,20 @@ function Dashboard() {
         <select value={category} onChange={(e) => setCategory(e.target.value)} required>
           <option value="">Select Category</option>
           {filteredCategories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
         <button type="submit">{editingId ? 'Update' : 'Add'}</button>
+        {editingId && (
+          <button type="button" onClick={handleCancelEdit}>Cancel</button>
+        )}
       </form>
 
       <h3>Your Transactions</h3>
       <ul>
         {transactions.map((txn) => (
           <li key={txn._id}>
-            {txn.description} - ${txn.amount} ({txn.type}, {txn.category})
+            {txn.description} - ${txn.amount} ({txn.category}, {txn.type})
             <button onClick={() => handleEdit(txn)}>Edit</button>
             <button onClick={() => handleDelete(txn._id)}>Delete</button>
           </li>
@@ -159,6 +132,6 @@ function Dashboard() {
       </ul>
     </div>
   );
-}
+};
 
 export default Dashboard;
